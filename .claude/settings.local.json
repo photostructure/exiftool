@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(perl:*)",
+      "Bash(make test:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(awk:*)",
+      "Bash(git -C /home/mrm/src/exif-rs log --oneline -10)",
+      "Bash(mkdir:*)",
+      "Bash(cargo init:*)",
+      "WebFetch(domain:exiftool.org)",
+      "Bash(rg:*)",
+      "Bash(rg:*)",
+      "Bash(ls:*)",
+      "Bash(ls:*)",
+      "Bash(sed:*)"
+    ],
+    "deny": []
+  }
+}
