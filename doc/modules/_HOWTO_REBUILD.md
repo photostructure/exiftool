@@ -59,6 +59,32 @@ Create a todo list with these tasks:
 31. Create module outline for Sanyo.pm
 32. Create module outline for Sigma.pm
 33. Create module outline for SigmaRaw.pm
+34. Create module outline for PNG.pm
+35. Create module outline for MakerNotes.pm
+36. Create module outline for DNG.pm
+37. Create module outline for JPEG.pm
+38. Create module outline for TIFF.pm
+39. Create module outline for RIFF.pm
+40. Create module outline for FujiFilm.pm
+41. Create module outline for Apple.pm
+42. Create module outline for Casio.pm
+43. Create module outline for Kodak.pm
+44. Create module outline for JVC.pm
+45. Create module outline for GE.pm
+46. Create module outline for HP.pm
+47. Create module outline for GIF.pm
+48. Create module outline for FLAC.pm
+49. Create module outline for H264.pm
+50. Create module outline for MPEG.pm
+51. Create module outline for Matroska.pm
+52. Create module outline for Ogg.pm
+56. Create module outline for FLIR.pm
+57. Create module outline for Red.pm
+58. Create module outline for GoPro.pm
+59. Create module outline for DJI.pm
+60. Create module outline for Lytro.pm
+61. Create module outline for GPS.pm
+62. Create module outline for JSON.pm
 ```
 
 ### Step 2: Analyze the Module Landscape
@@ -128,7 +154,7 @@ For each major module, create a file in `doc/modules/[ModuleName].md` with this 
 **ExifTool Version:** [current]
 **Module Version:** [from $VERSION in module]
 **Document Version:** 1.0
-**Last Updated:** [YYYY-MM-DD]
+**Last Updated:** [YYYY-MM-DD] -- run `date`, it's not 2024!
 
 ## Overview
 
