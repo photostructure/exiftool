@@ -2,8 +2,8 @@
 
 **ExifTool Version:** 13.26  
 **Module Version:** 4.38  
-**Document Version:** 1.0  
-**Last Updated:** 2025-06-29
+**Document Version:** 1.1  
+**Last Updated:** 2025-07-01
 
 ## Overview
 
@@ -74,18 +74,29 @@ ProcessExif($$$)
 
 ### 2. Tag Processing
 
-**ProcessTiffIFD($$$)**
-- Reads IFD entry count
-- Processes each tag entry
-- Handles value offsets
-- Manages subdirectories
-- Links to next IFD
+**ProcessExif($$$)** - Primary IFD Processing Function (`Exif.pm:6172-7128`)
+- **956-line function** containing all core EXIF/IFD parsing logic
+- Reads IFD entry count (2 bytes)
+- Processes each 12-byte tag entry:
+  - TagID (2 bytes)
+  - Format (2 bytes) 
+  - Count (4 bytes)
+  - Value/Offset (4 bytes)
+- Handles value offsets and validation
+- Manages subdirectories and maker notes
+- Links to next IFD in chain
+
+**ProcessTiffIFD($$$)** - Specialized Alias
+- **Forward-declared only** (`Exif.pm:70`) - no explicit implementation
+- Used specifically for ProfileIFD processing (tag 0xc6f5)
+- Likely runtime alias to ProcessExif with TIFF-like header handling
+- **For implementation: focus on ProcessExif as primary reference**
 
 **Value Extraction:**
-- In-line values (≤4 bytes)
-- Offset-based values (>4 bytes)
-- Format-specific conversion
-- Byte order handling
+- In-line values (≤4 bytes) - read directly from entry
+- Offset-based values (>4 bytes) - follow pointer to data
+- Format-specific conversion with endianness handling
+- Extensive offset validation and bounds checking
 
 ### 3. Subdirectory System
 
@@ -226,3 +237,98 @@ ProcessExif($$$)
 - Examine offsets with `-htmlDump`
 - Text encoding visible with `-v`
 - Maker note detection in `-v3`
+
+---
+
+## exif-oxide Implementation Guide
+
+### Source Reference Strategy for Milestones
+
+**Primary Reference: ProcessExif Function (`Exif.pm:6172-7128`)**
+
+For implementing exif-oxide milestones, **ProcessExif is your main translation target**:
+
+1. **Milestone 2 (Minimal EXIF Parser)**: Focus on ProcessExif's core IFD parsing loop
+2. **Milestone 3+ (Advanced Features)**: Port ProcessExif's subdirectory and offset management
+3. **ProcessTiffIFD**: Ignore - it's only forward-declared, likely an alias to ProcessExif
+
+### ProcessExif Implementation Phases
+
+**Phase 1 - Core IFD Parser (Milestone 2):**
+```rust
+// Port these ProcessExif sections:
+// Lines 6174-6248: TIFF header validation and setup
+// Lines 6342-6390: IFD entry reading loop  
+// Lines 6390-6570: Basic value extraction (inline values only)
+```
+
+**Phase 2 - Offset Handling (Milestone 3):**
+```rust
+// Port these ProcessExif sections:
+// Lines 6390-6570: Offset-based value reading (>4 bytes)
+// Lines 6570-6646: Tag information lookup
+// Lines 6647-6681: Value conversion system
+```
+
+**Phase 3 - Subdirectories (Milestone 5+):**
+```rust
+// Port these ProcessExif sections:  
+// Lines 6807-7041: SubDirectory processing (most complex)
+// Lines 7090-7120: Next IFD chain processing
+// Offset management and base calculations
+```
+
+### Critical ProcessExif Patterns to Preserve
+
+**⚠️ EXACT TRANSLATION REQUIRED:**
+
+1. **Offset Calculations**: ProcessExif's offset math must be translated verbatim
+2. **Entry Count Validation**: Essential for handling corrupt files gracefully
+3. **Format Type Mapping**: ExifTool's 1-13 format number system 
+4. **Error Recovery**: Different validation levels for maker notes vs standard EXIF
+5. **State Management**: ProcessExif is essentially a state machine with complex recursion prevention
+
+### ProcessExif Function Structure for Reference
+
+```perl
+sub ProcessExif($$$) {
+    # 956-line function organized as:
+    
+    # 1. Initialization (lines 6174-6281)
+    #    - Parameter extraction, validation setup
+    #    - Read IFD entry count, validate directory size
+    
+    # 2. Main Entry Loop (lines 6342-7081)  
+    #    - Parse each 12-byte IFD entry
+    #    - Handle inline vs offset-based values
+    #    - Tag lookup and format validation
+    #    - SubDirectory processing (most complex part)
+    #    - Value conversion and storage
+    
+    # 3. Next IFD Processing (lines 7090-7120)
+    #    - Follow IFD chain (IFD0 → IFD1 → IFD2...)
+    #    - Recursive processing with validation
+    
+    # 4. Cleanup & Return (lines 7121-7128)
+    
+    return $success;
+}
+```
+
+### Memory and Performance Patterns
+
+**ProcessExif Performance Optimizations to Port:**
+- Binary data limits (`BINARY_DATA_LIMIT = 10MB`)
+- Large array size restrictions to prevent processing delays
+- RAF (Random Access File) streaming for efficient large file handling
+- Lazy subdirectory loading patterns
+
+### Error Handling Strategy
+
+**ProcessExif Error Classification System:**
+- **Fatal Errors**: Stop processing immediately
+- **Minor Errors**: Continue with warnings (maker notes)
+- **Suspicious Offsets**: Warn but attempt processing
+- **Corrupt Data**: Graceful degradation with partial extraction
+
+This represents 25+ years of camera-specific quirks and edge cases that must be preserved exactly in the Rust translation.
