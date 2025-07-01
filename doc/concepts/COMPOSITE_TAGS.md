@@ -88,13 +88,118 @@ The `AddCompositeTags` function (ExifTool.pm:5662):
 
 ### 2. Building (BuildCompositeTags)
 
-The `BuildCompositeTags` function (ExifTool.pm:3904):
+The `BuildCompositeTags` function (ExifTool.pm:3904) implements a sophisticated multi-pass algorithm:
 
-- Called after all regular tags are extracted
-- Iterates through composite tags, checking dependencies
-- Handles circular dependencies through deferred processing
-- Supports SubDoc tags for multi-document files
-- Populates `$$self{VALUE}` with calculated values
+#### Algorithm Overview
+
+1. **Initialization**: Gets composite table, sets `BuildingComposite` flag, creates tag list
+2. **Multi-pass loop**: Continues until all possible tags are built or circular dependency detected
+3. **Dependency resolution**: Defers tags requiring unbuilt composites
+4. **SubDoc support**: Handles multi-document files with special caching
+
+#### Detailed Processing Steps
+
+**Pass Setup**:
+
+```perl
+for (;;) {  # Multi-pass loop
+    my (%notBuilt, @deferredTags);
+    # Track which composite tags haven't been built yet
+    foreach (@tagList) {
+        $notBuilt{$$compTable{$_}{Name}} = 1 unless $specialTags{$_};
+    }
+```
+
+**Tag Processing Loop**:
+For each composite tag:
+
+1. **Dependency Collection**:
+
+   - Iterates through Require, Desire, and Inhibit indices
+   - Resolves group-prefixed tag names (e.g., `GPS:GPSLatitude`)
+   - Handles alternate file references (e.g., `File1:TagName`)
+   - Defers tags requiring unbuilt composites
+
+2. **Group Resolution**:
+
+   ```perl
+   if ($reqTag =~ /^(.*):(.+)/) {
+       my ($reqGroup, $name) = ($1, $2);
+       # Build list of matching tag keys
+       # Use GroupMatches() to filter by group
+   }
+   ```
+
+3. **SubDoc Processing**:
+
+   - For multi-document files ($$self{DOC_COUNT} > 0)
+   - Caches tag lookups for performance: `$cache{$reqTag} = []`
+   - Processes each document individually: `$docNum = 0..DOC_COUNT`
+   - Maps tags to document numbers using G3 group
+
+4. **Dependency Validation**:
+
+   ```perl
+   if (defined $$rawValue{$reqTag}) {
+       if ($$inhibit{$index}) {
+           $found = 0; last;  # Inhibit tag exists, abort
+       } else {
+           $found = 1;        # Required/Desired tag found
+       }
+   } elsif ($$require{$index}) {
+       $found = 0; last;      # Required tag missing, abort
+   }
+   ```
+
+5. **Tag Creation**:
+   - If all dependencies satisfied: `$self->FoundTag($tagInfo, \%tagKey)`
+   - Updates `$$self{COMP_KEYS}` for tracking dependencies
+   - Removes from `%notBuilt` tracking
+
+**Deferred Processing**:
+
+- Tags requiring unbuilt composites added to `@deferredTags`
+- Next pass processes only deferred tags
+- Continues until no progress made
+
+**Circular Dependency Detection**:
+
+```perl
+if (@deferredTags == @tagList) {
+    if ($allBuilt) {
+        warn "Circular dependency in Composite tags\n";
+        last;
+    }
+    $allBuilt = 1;  # Final pass, ignore Inhibit composites
+}
+```
+
+#### Special Features
+
+**SubDoc Caching**:
+
+- Builds `$cache{$tagName}` arrays indexed by document number
+- Optimizes processing when many sub-documents exist
+- Uses `$$self{TAG_EXTRA}{$_}{G3}` for document mapping
+
+**Alternate File Support**:
+
+- Detects `File1:`, `File2:` etc. prefixes
+- Retrieves tags from `$$self{ALT_EXIFTOOL}{$fileN}`
+- Copies metadata with `CopyAltInfo()`
+
+**Dependency Tracking**:
+
+- `$$self{COMP_KEYS}` maps tag keys to composite dependencies
+- Enables updating composites when source tags change
+- Format: `$compKeys{tagKey} = [ [\%tagKey, $index], ... ]`
+
+#### Performance Optimizations
+
+- Sorts tag list for consistent processing order
+- Caches group lookups in SubDoc mode
+- Short-circuits when required tags don't exist
+- Batches deferred tags for fewer passes
 
 ### 3. Dependency Resolution
 
