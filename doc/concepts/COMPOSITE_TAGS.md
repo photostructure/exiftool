@@ -201,6 +201,135 @@ Users can create custom composite tags via the configuration file:
 );
 ```
 
+## Group Name Conflicts and Precedence
+
+### Tag Resolution Order
+
+When requesting a tag like "GPSLatitude", ExifTool follows this precedence:
+
+1. **Without group prefix**: Returns first matching tag in priority order:
+
+   - Higher numbered duplicates have priority (e.g., "GPSLatitude (1)" over "GPSLatitude")
+   - Most recently extracted tag wins if same priority
+   - Composite tags are built after extraction, so appear last
+
+2. **With group prefix** (e.g., "GPS:GPSLatitude"):
+   - `GroupMatches()` filters tags by group (ExifTool.pm:5125)
+   - Group families checked: 0 (general), 1 (specific), 2 (category)
+   - Returns first match from filtered list
+
+### Composite Tag Groups
+
+Composite tags always belong to:
+
+- **Family 0**: 'Composite'
+- **Family 1**: 'Composite'
+- **Family 2**: Inherited from module (e.g., 'Location' for GPS composites)
+
+The `-G` flag shows family 1 groups, so composite tags appear as "Composite:TagName".
+
+### Priority and Avoid Flags
+
+Some composite tags use special flags:
+
+- `Avoid => 1`: Tag not returned unless specifically requested by group
+- `Priority => 1`: Overrides Avoid's default priority of 0
+- Example: GPS composite tags set both to provide formatted output by default
+
+## GPS Coordinate Conversions
+
+### Raw GPS Format
+
+EXIF GPS coordinates are stored as three rational64u values:
+
+```
+[[degrees, 1], [minutes, 1], [seconds, 100]]
+```
+
+### Composite Conversion Implementation
+
+From GPS.pm:353, the GPS composite tags convert to decimal degrees:
+
+```perl
+GPSLatitude => {
+    Require => {
+        0 => 'GPS:GPSLatitude',      # [[d,1],[m,1],[s,100]]
+        1 => 'GPS:GPSLatitudeRef',   # 'N' or 'S'
+    },
+    ValueConv => '$val[1] =~ /^S/i ? -$val[0] : $val[0]',
+    PrintConv => 'Image::ExifTool::GPS::ToDMS($self, $val, 1, "N")',
+}
+```
+
+The `ToDegrees()` function (GPS.pm:582) performs the conversion:
+
+```perl
+my $deg = $d + (($m || 0) + ($s || 0)/60) / 60;
+```
+
+### Hemisphere Handling
+
+- Latitude: 'S' (South) makes value negative
+- Longitude: 'W' (West) makes value negative
+- PrintConv formats back to DMS with appropriate suffix
+
+### Other GPS Composites
+
+- **GPSDateTime**: Combines GPSDateStamp + GPSTimeStamp
+- **GPSAltitude**: Merges altitude value with Above/Below sea level ref
+- **GPSPosition**: Not standard, but could combine lat/lon
+- **GPSDestLatitude/Longitude**: For destination coordinates
+
+## Composite Tag Group Hierarchy
+
+### Module Registration
+
+When a module adds composites via `AddCompositeTags()`:
+
+1. **Default groups assigned**:
+
+   ```perl
+   GROUPS => { 0 => 'Composite', 1 => 'Composite', 2 => 'Other' }
+   ```
+
+2. **Module groups inherited**:
+
+   ```perl
+   %Image::ExifTool::GPS::Composite = (
+       GROUPS => { 2 => 'Location' },  # Overrides default group 2
+   ```
+
+3. **Tag-specific groups**:
+
+   ```perl
+   GPSDateTime => {
+       Groups => { 2 => 'Time' },  # Override for this tag only
+   ```
+
+### Group Hierarchy
+
+Groups are resolved in this order:
+
+1. Tag-specific Groups hash
+2. Module Composite table GROUPS
+3. Main Composite table defaults
+
+### Dynamic Group Assignment
+
+The `GetGroup()` function (ExifTool.pm:3738) handles group resolution:
+
+- Groups 0-2 are guaranteed to be defined after processing
+- Dynamic groups (G0, G1, etc.) can override at extraction time
+- Composite tags cannot "masquerade" as other groups - they're always in family 0/1 'Composite'
+
+### Accessing Composite Tags by Group
+
+Examples:
+
+- `Composite:GPSLatitude` - Explicitly request composite version
+- `GPS:GPSLatitude` - Gets raw GPS IFD value (3 rationals)
+- `GPSLatitude` - Gets composite (decimal) due to Priority flag
+
 ## Performance Considerations
 
 - Tags are built on-demand when accessed
