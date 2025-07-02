@@ -247,6 +247,57 @@ This reflects the asymmetric complexity of parsing vs. formatting.
 5. **Consider localization** for user-facing strings
 6. **Test edge cases** including zero, negative, and extreme values
 
+## JSON Output and Numeric PrintConv Values
+
+### Important Discovery: PrintConv Can Return Numeric Values
+
+While PrintConv traditionally formats values for human readability, some PrintConv functions return numeric strings that become JSON numbers:
+
+**Examples**:
+- `FNumber`: PrintConv returns `"4.0"` → JSON outputs as `4.0` (number)
+- `ExposureTime`: PrintConv returns `"1/2000"` → JSON outputs as `"1/2000"` (string)
+- `FocalLength`: PrintConv returns `"24.0 mm"` → JSON outputs as `"24.0 mm"` (string)
+
+### The FNumber Case Study
+
+```perl
+# From Exif.pm
+sub PrintFNumber($)
+{
+    my $val = shift;
+    if (Image::ExifTool::IsFloat($val) and $val > 0) {
+        # round to 1 decimal place, or 2 for values < 1.0
+        $val = sprintf(($val<1 ? "%.2f" : "%.1f"), $val);
+    }
+    return $val;  # Returns numeric value, not string!
+}
+```
+
+**Key Point**: PrintFNumber formats the number but returns it as a numeric value, not a string with "f/" prefix. This allows JSON to encode it as a number.
+
+### Implementation Guidance for exif-oxide
+
+1. **Preserve ExifTool's Exact Behavior**: Some PrintConv functions format numeric values but keep them numeric for JSON encoding
+2. **Don't Assume PrintConv = String**: The name is misleading - it's more "DisplayConv" that can return any type
+3. **Match Quirks Exactly**: Including "24.0 mm" with the unnecessary `.0` for whole numbers
+
+### The -# Flag Behavior
+
+ExifTool's `-TagName#` syntax:
+- Disables PrintConv for that specific tag
+- Shows the ValueConv result (or raw value if no ValueConv)
+- In JSON, maintains proper type (numbers unquoted, strings quoted)
+
+```bash
+# Normal output
+exiftool -j image.jpg
+{"FNumber": 4.0}  # PrintConv result as number
+
+# With -# flag
+exiftool -j -FNumber# image.jpg  
+{"FNumber": 4}    # ValueConv/raw result
+```
+
 ## Reference
 
 For complete technical documentation on PrintConv and all tag information hash entries, see `lib/Image/ExifTool/README` lines 665-677 and the full tag information specification starting at line 280.
