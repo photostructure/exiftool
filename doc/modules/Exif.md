@@ -332,3 +332,40 @@ sub ProcessExif($$$) {
 - **Corrupt Data**: Graceful degradation with partial extraction
 
 This represents 25+ years of camera-specific quirks and edge cases that must be preserved exactly in the Rust translation.
+
+## Lens Tag Implementation Details
+
+### Core Lens Tags (EXIF 2.3+)
+
+**LensInfo (0xA432)** - `Exif.pm:2922-2933`
+- Format: rational64u[4] containing [MinFocal, MaxFocal, MinF@MinFocal, MinF@MaxFocal]
+- PrintConv: `PrintLensInfo()` at lines 5694-5712
+- Formats as "24-70mm f/2.8" or "50mm f/1.4"
+- Special handling for Pentax Q (writes 0 for max focal on fixed lenses)
+
+**LensMake (0xA433)** - `Exif.pm:2934`
+- Format: ASCII string
+- Lens manufacturer name
+
+**LensModel (0xA434)** - `Exif.pm:2935`
+- Format: ASCII string  
+- Full lens model/name
+
+**LensSerialNumber (0xA435)** - `Exif.pm:2936`
+- Format: ASCII string
+- Unique lens identifier
+
+### PrintLensInfo Algorithm (lines 5694-5712)
+
+1. Splits space-separated rational values
+2. Validates all 4 values are numeric/'inf'/'undef'
+3. Converts 'inf'/'undef' to '?' for unknown
+4. Formats focal range: skips range if min==max
+5. Formats aperture range: skips range if min==max
+6. Returns formatted string like "18-55mm f/3.5-5.6"
+
+### Related Functions
+
+**GetLensInfo()** (lines 5719-5735) - Parses lens string back to values
+**ConvertLensInfo()** (WriteExif.pl:73-78) - PrintConvInv implementation
+**MatchLensModel()** (lines 5738-5768) - Lens identification helper
