@@ -4,7 +4,7 @@ Provide this sort of prompt to claude:
 
 We need to deeply understand how $CONCEPT and referenced implementations work
 within this library. Please write a `doc/concepts/$CONCEPT.md` research
-document. Keep the final product under 250 lines -- use terse, precise, and
+document. Keep the final document under 350 lines -- use terse, precise, and
 concise language.
 
 - Start by reading `$REPO_ROOT/CLAUDE.md`,
