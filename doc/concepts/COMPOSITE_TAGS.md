@@ -11,6 +11,8 @@ Composite tags are convenience tags calculated after all other information is ex
 - Fallback logic when preferred tags are missing
 - Cross-format data synthesis (e.g., combining EXIF and XMP data)
 
+**Important:** Some composite tags exhibit nondeterministic behavior due to Perl's hash randomization. See [NONDETERMINISM.md](NONDETERMINISM.md) for details on affected tags and workarounds.
+
 ## Architecture
 
 ### Main Composite Table
