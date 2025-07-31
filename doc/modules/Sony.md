@@ -43,9 +43,33 @@ The Sony module handles metadata from Sony's diverse camera lineup, including Al
 - Double-encryption bug handling (v9.04-9.10)
 
 **Encrypted Sections:**
-- 0x94xx tag directories
+- 0x94xx tag directories (automatically detected by tag range)
 - Camera-specific info blocks
 - Sensitive calibration data
+
+### MakerNotes Dispatch Integration
+
+Sony maker notes are processed through **6 distinct variants** in MakerNotes.pm:
+
+**MakerNoteSony** (Primary):
+- Headers: `SONY DSC `, `SONY CAM `, `SONY MOBILE`, `\0\0SONY PIC\0`, `VHAB     \0`
+- Target: Sony::Main table (lines 664+)
+- Start offset: +12 bytes (skips header)
+
+**MakerNoteSony5** (Raw formats):
+- Condition: Sony/Hasselblad Make AND not `\x01\x00` header
+- Target: Sony::Main table
+- Usage: SR2/ARW raw images, Hasselblad partnership models
+
+**Legacy Variants** (Sony2/3):
+- Headers: `SONY PI\0`, `PREMI\0`
+- Target: Olympus::Main (legacy partnership)
+- Models: DSC-S650/S700/S750, DSC-S45/S500
+
+**Specialized Variants**:
+- **Sony4**: `SONY PIC\0` → Sony::PIC table
+- **SonyEricsson**: `SEMC MS\0` → Sony::Ericsson table  
+- **SonySRF**: Sony Raw Format → Sony::SRF table
 
 ## Processing Flow
 
