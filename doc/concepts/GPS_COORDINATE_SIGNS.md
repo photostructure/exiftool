@@ -176,6 +176,67 @@ if ($val < 0) {
 - Ensures minutes and seconds stay below 60
 - Example: "72° 59' 60.00"" → "73° 0' 0.00""
 
+## PrintConv Directional Formatting
+
+### GPSLatitude and GPSLongitude PrintConv Logic
+
+**Location:** `lib/Image/ExifTool/GPS.pm` lines 382, 403
+
+**Composite Tag PrintConv Calls:**
+```perl
+# GPSLatitude Composite
+PrintConv => 'Image::ExifTool::GPS::ToDMS($self, $val, 1, "N")',
+
+# GPSLongitude Composite  
+PrintConv => 'Image::ExifTool::GPS::ToDMS($self, $val, 1, "E")',
+```
+
+**ToDMS Parameters:**
+- `$self` - ExifTool object reference
+- `$val` - Signed decimal degrees value (already has proper sign from ValueConv)
+- `1` - Format code for CoordFormat (enables DMS formatting with directional indicators)
+- `"N"` or `"E"` - Base reference direction for positive values
+
+### Directional Indicator Logic
+
+**Location:** `lib/Image/ExifTool/GPS.pm` lines 506-515
+
+**Algorithm in ToDMS function:**
+```perl
+if ($val < 0) {
+    $val = -$val;                        # Make coordinate positive
+    $ref = {N => 'S', E => 'W'}->{$ref}; # Flip reference direction
+    $sign = '-';
+    $minus = '-';
+} else {
+    $sign = '+';
+    $minus = '';
+}
+$ref = " $ref" unless $doPrintConv and $doPrintConv eq '2'; # Add space before direction
+```
+
+**Direction Assignment:**
+- **Positive latitude** (`$val >= 0`) → `"N"` (North)
+- **Negative latitude** (`$val < 0`) → `"S"` (South) 
+- **Positive longitude** (`$val >= 0`) → `"E"` (East)
+- **Negative longitude** (`$val < 0`) → `"W"` (West)
+
+### Default Format String
+
+**Location:** `lib/Image/ExifTool/GPS.pm` lines 524-527
+
+**Default CoordFormat:**
+```perl
+$fmt = $et->Options('CoordFormat');
+if (not $fmt) {
+    $fmt = q{%d deg %d' %.2f"} . $ref;  # Default: "51 deg 29' 43.40" + " N"
+}
+```
+
+**Result Format:** `"51 deg 29' 43.40\" N"`
+
+The directional indicator (`" N"`, `" S"`, `" E"`, `" W"`) is automatically appended to the coordinate string, with a leading space, when using the default CoordFormat.
+
 ## Implementation Notes
 
 ### For exif-oxide Implementation
@@ -186,6 +247,13 @@ if ($val < 0) {
 3. **Case-insensitive matching**: Reference detection uses `/^S/i` and `/^W/i` patterns
 4. **Flexible input**: Support multiple reference formats during writing
 5. **Round-off handling**: Include precision correction for DMS boundary cases
+6. **PrintConv directional formatting**: Must include N/S/E/W directional indicators in output
+
+**Critical Implementation Requirements:**
+- **ValueConv**: Apply proper sign based on reference tags
+- **PrintConv**: Format as DMS with directional indicator appended
+- **Default format**: `"DD deg MM' SS.SS\" D"` where D is N/S/E/W
+- **Direction logic**: Flip base reference (N→S, E→W) for negative coordinates
 
 **Critical Regex Patterns:**
 - Latitude: `$val[1] =~ /^S/i ? -$val[0] : $val[0]`
