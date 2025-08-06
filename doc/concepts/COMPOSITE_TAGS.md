@@ -1,451 +1,118 @@
-# COMPOSITE_TAGS.md
-
-This document explains ExifTool's Composite tag infrastructure - a powerful system for deriving new tags from existing tag values.
+# ExifTool Composite Tag System Architecture
 
 ## Overview
 
-Composite tags are convenience tags calculated after all other information is extracted. They derive their values from one or more source tags using custom logic. This system enables:
-
-- Consolidating information from multiple tags into a single value
-- Format conversion and unit calculations
-- Fallback logic when preferred tags are missing
-- Cross-format data synthesis (e.g., combining EXIF and XMP data)
-
-**Important:** Some composite tags exhibit nondeterministic behavior due to Perl's hash randomization. See [NONDETERMINISM.md](NONDETERMINISM.md) for details on affected tags and workarounds.
+Composite tags in ExifTool are calculated fields that derive their values from one or more source tags. They provide convenient computed values like GPS coordinates in decimal degrees, combined date/time fields, or derived camera settings.
 
 ## Architecture
 
-### Main Composite Table
+### 1. Organization Structure
 
-The central composite table is defined in `lib/Image/ExifTool.pm`:
+**Centralized Main Table**: The primary composite table is `%Image::ExifTool::Composite` in `lib/Image/ExifTool.pm` (around line 6800-7500). This contains most composite definitions.
 
+**Module-Specific Tables**: Individual modules can define their own composite tables using the pattern `%Image::ExifTool::ModuleName::Composite`. Examples:
+- `%Image::ExifTool::GPS::Composite` in `/lib/Image/ExifTool/GPS.pm` (lines 353-490)
+- `%Image::ExifTool::Exif::Composite` in `/lib/Image/ExifTool/Exif.pm` (lines 4639-4720)
+- `%Image::ExifTool::Canon::Composite` in `/lib/Image/ExifTool/Canon.pm` (lines 7800-8200)
+
+### 2. Registration Process
+
+**AddCompositeTags Function**: Located in `lib/Image/ExifTool.pm` at lines 5662-5720, this function:
+1. Merges all composite tables into the main %Composite table
+2. Processes dependency relationships (Require/Desire/Inhibit)
+3. Sets up the composite tag infrastructure
+
+**Module Registration**: Each module with composite tags calls:
 ```perl
-%Image::ExifTool::Composite = (
-    GROUPS => { 0 => 'Composite', 1 => 'Composite' },
-    TABLE_NAME => 'Image::ExifTool::Composite',
-    SHORT_NAME => 'Composite',
-    VARS => { NO_ID => 1 }, # want empty tagID's for Composite tags
-    WRITE_PROC => \&DummyWriteProc,
-);
+Image::ExifTool::AddCompositeTags('Image::ExifTool::ModuleName');
 ```
 
-### Module-Specific Composite Tables
-
-Each format module can define its own composite tags:
+### 3. Field Extractor Symbol Detection
 
-```perl
-%Image::ExifTool::Exif::Composite = (
-    GROUPS => { 2 => 'Image' },
-    ImageSize => { ... },
-    # more tags...
-);
+The field extractor correctly identifies composite tables as `composite_hash` types and extracts them with `IsComposite:1` metadata. The composite data is stored directly in the symbol's data field, not nested under a "data" key.
 
-# Register with main composite table
-Image::ExifTool::AddCompositeTags('Image::ExifTool::Exif');
-```
+### 4. Composite Tag Structure
 
-## Tag Definition Structure
+Each composite tag definition includes:
 
-### Key Components
-
-Each composite tag definition contains:
-
-- **Require**: Hash of tags that must exist for composite to be calculated
-- **Desire**: Hash of optional tags that enhance the calculation
-- **Inhibit**: Hash of tags that prevent calculation if present
-- **ValueConv**: Perl code to calculate the composite value
-- **PrintConv**: Optional formatting for display
-
-### Example Definition
-
-```perl
-ImageSize => {
-    Require => {
-        0 => 'ImageWidth',
-        1 => 'ImageHeight',
-    },
-    Desire => {
-        2 => 'ExifImageWidth',
-        3 => 'ExifImageHeight',
-    },
-    ValueConv => q{
-        return "$val[2] $val[3]" if $val[2] and $val[3];
-        return "$val[0] $val[1]" if IsFloat($val[0]) and IsFloat($val[1]);
-        return undef;
-    },
-    PrintConv => '$val =~ tr/ /x/; $val',
-}
-```
-
-## Processing Flow
-
-### 1. Registration (AddCompositeTags)
-
-The `AddCompositeTags` function (ExifTool.pm:5662):
-
-- Adds module-specific composite tags to the main Composite table
-- Handles naming conflicts by appending module prefix
-- Sets up tag metadata (groups, override behavior)
-- Converts scalar Require/Desire/Inhibit to hash format
-
-### 2. Building (BuildCompositeTags)
-
-The `BuildCompositeTags` function (ExifTool.pm:3904) implements a sophisticated multi-pass algorithm:
-
-#### Algorithm Overview
+- **Require**: Array of mandatory source tags
+- **Desire**: Array of optional source tags that enhance calculation
+- **Inhibit**: Array of tags that prevent composite calculation if present
+- **ValueConv**: Perl expression for raw value calculation
+- **PrintConv**: Perl expression for human-readable formatting
+- **Groups**: Categorization info (typically Composite group)
 
-1. **Initialization**: Gets composite table, sets `BuildingComposite` flag, creates tag list
-2. **Multi-pass loop**: Continues until all possible tags are built or circular dependency detected
-3. **Dependency resolution**: Defers tags requiring unbuilt composites
-4. **SubDoc support**: Handles multi-document files with special caching
+## Implementation Details
 
-#### Detailed Processing Steps
+### GPS Module Example
 
-**Pass Setup**:
-
-```perl
-for (;;) {  # Multi-pass loop
-    my (%notBuilt, @deferredTags);
-    # Track which composite tags haven't been built yet
-    foreach (@tagList) {
-        $notBuilt{$$compTable{$_}{Name}} = 1 unless $specialTags{$_};
-    }
-```
+The GPS composite table (`lines 353-490 in GPS.pm`) defines 6 composite tags:
 
-**Tag Processing Loop**:
-For each composite tag:
+1. **GPSAltitude**: Combines altitude value and reference
+   - Desire: GPS:GPSAltitude, GPS:GPSAltitudeRef, XMP:GPSAltitude, XMP:GPSAltitudeRef
+   - Handles both GPS and XMP sources
 
-1. **Dependency Collection**:
+2. **GPSDateTime**: Combines date and time stamps
+   - Require: GPS:GPSDateStamp, GPS:GPSTimeStamp
+   - Creates ISO format: "YYYY:mm:dd HH:MM:SSZ"
 
-   - Iterates through Require, Desire, and Inhibit indices
-   - Resolves group-prefixed tag names (e.g., `GPS:GPSLatitude`)
-   - Handles alternate file references (e.g., `File1:TagName`)
-   - Defers tags requiring unbuilt composites
+3. **GPSLatitude/GPSLongitude**: Convert DMS to decimal degrees
+   - Require: coordinate + direction reference
+   - Apply sign based on N/S or E/W reference
 
-2. **Group Resolution**:
+4. **GPSDestLatitude/GPSDestLongitude**: Similar to above for destination
 
-   ```perl
-   if ($reqTag =~ /^(.*):(.+)/) {
-       my ($reqGroup, $name) = ($1, $2);
-       # Build list of matching tag keys
-       # Use GroupMatches() to filter by group
-   }
-   ```
+### Canon Module Example
 
-3. **SubDoc Processing**:
+The Canon composite table (`lines 7800-8200 in Canon.pm`) includes advanced composites:
 
-   - For multi-document files ($$self{DOC_COUNT} > 0)
-   - Caches tag lookups for performance: `$cache{$reqTag} = []`
-   - Processes each document individually: `$docNum = 0..DOC_COUNT`
-   - Maps tags to document numbers using G3 group
+- **DriveMode**: Derives from ContinuousDrive + SelfTimer settings
+- **Lens**: Focal length range calculation
+- **ShootingMode**: Complex logic combining exposure mode and easy mode
+- **ISO**: Calculated from BaseISO × AutoISO when CameraISO isn't numeric
 
-4. **Dependency Validation**:
+## Key Patterns
 
-   ```perl
-   if (defined $$rawValue{$reqTag}) {
-       if ($$inhibit{$index}) {
-           $found = 0; last;  # Inhibit tag exists, abort
-       } else {
-           $found = 1;        # Required/Desired tag found
-       }
-   } elsif ($$require{$index}) {
-       $found = 0; last;      # Required tag missing, abort
-   }
-   ```
-
-5. **Tag Creation**:
-   - If all dependencies satisfied: `$self->FoundTag($tagInfo, \%tagKey)`
-   - Updates `$$self{COMP_KEYS}` for tracking dependencies
-   - Removes from `%notBuilt` tracking
-
-**Deferred Processing**:
-
-- Tags requiring unbuilt composites added to `@deferredTags`
-- Next pass processes only deferred tags
-- Continues until no progress made
-
-**Circular Dependency Detection**:
-
-```perl
-if (@deferredTags == @tagList) {
-    if ($allBuilt) {
-        warn "Circular dependency in Composite tags\n";
-        last;
-    }
-    $allBuilt = 1;  # Final pass, ignore Inhibit composites
-}
-```
-
-#### Special Features
-
-**SubDoc Caching**:
-
-- Builds `$cache{$tagName}` arrays indexed by document number
-- Optimizes processing when many sub-documents exist
-- Uses `$$self{TAG_EXTRA}{$_}{G3}` for document mapping
-
-**Alternate File Support**:
+### 1. Dependency Types
+- **Require**: Must have ALL listed tags
+- **Desire**: Uses any available tags from list
+- **Inhibit**: Skips calculation if ANY listed tags exist
 
-- Detects `File1:`, `File2:` etc. prefixes
-- Retrieves tags from `$$self{ALT_EXIFTOOL}{$fileN}`
-- Copies metadata with `CopyAltInfo()`
+### 2. Value Processing
+- **ValueConv**: Raw calculation (numbers, internal values)  
+- **PrintConv**: Human-readable formatting
+- **Writable**: Some composites can be written back to source tags
 
-**Dependency Tracking**:
+### 3. Priority System
+- `Priority => 0`: Let other tags take precedence
+- Higher numbers = higher priority
 
-- `$$self{COMP_KEYS}` maps tag keys to composite dependencies
-- Enables updating composites when source tags change
-- Format: `$compKeys{tagKey} = [ [\%tagKey, $index], ... ]`
+## Codegen Integration
 
-#### Performance Optimizations
+### Field Extraction
+The field extractor (`field_extractor.pl`) correctly identifies composite symbols:
+- Type: `composite_hash`
+- Data: Direct object containing tag definitions
+- Metadata: Includes `IsComposite: 1` flag
 
-- Sorts tag list for consistent processing order
-- Caches group lookups in SubDoc mode
-- Short-circuits when required tags don't exist
-- Batches deferred tags for fewer passes
+### Strategy Processing  
+The CompositeTagStrategy (`composite_tag.rs`) processes these symbols by:
+1. Extracting tag definitions from the symbol data
+2. Converting Perl expressions to documentation
+3. Generating Rust composite tag definitions
+4. Creating a global registry for runtime lookup
 
-### 3. Dependency Resolution
+The key fix was correcting the data access pattern from `symbol.data.get("data")` to `symbol.data.as_object()` since the field extractor stores composite data directly, not nested.
 
-The builder uses sophisticated dependency tracking:
+## Files Referenced
 
-- Tags requiring other composites are deferred
-- Multiple passes ensure all possible tags are built
-- Circular dependencies are detected and prevented
-- Alt file references (File1:TagName) are supported
+- `/home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool.pm` (lines 5662-5720, 6800-7500)
+- `/home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/GPS.pm` (lines 353-490) 
+- `/home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/Exif.pm` (lines 4639-4720)
+- `/home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/Canon.pm` (lines 7800-8200)
+- `/home/mrm/src/exif-oxide/codegen/src/strategies/composite_tag.rs` (lines 98-106)
+- `/home/mrm/src/exif-oxide/codegen/scripts/field_extractor.pl` (lines 75-85)
 
-## Common Patterns
+## Summary
 
-### 1. Fallback Values
-
-```perl
-Aperture => {
-    Require => { 0 => 'FNumber' },
-    Desire => { 1 => 'ApertureValue' },
-    ValueConv => '$val[0] || $val[1]',
-}
-```
-
-### 2. Unit Conversion
-
-```perl
-FocalLength35efl => {
-    Require => {
-        0 => 'FocalLength',
-        1 => 'ScaleFactor35efl',
-    },
-    ValueConv => '$val[0] * $val[1]',
-}
-```
-
-### 3. Complex Calculations
-
-```perl
-DOF => {
-    Require => {
-        0 => 'FocalLength',
-        1 => 'Aperture',
-        2 => 'CircleOfConfusion',
-    },
-    Desire => {
-        3 => 'FocusDistance',
-        4 => 'SubjectDistance',
-    },
-    ValueConv => q{
-        # Complex depth of field calculation
-        my $d = $val[3] || $val[4] || return undef;
-        # ... calculation logic ...
-    },
-}
-```
-
-### 4. Cross-Format Synthesis
-
-```perl
-GPSDateTime => {
-    Require => {
-        0 => 'GPS:GPSDateStamp',
-        1 => 'GPS:GPSTimeStamp',
-    },
-    ValueConv => '"$val[0] $val[1]Z"',
-}
-```
-
-## Special Features
-
-### IsComposite Flag
-
-All composite tags have `$$tagInfo{IsComposite} = 1` for identification.
-
-### Module Tracking
-
-Writable composite tags store their source module in `$$tagInfo{Module}`.
-
-### Override Behavior
-
-Tags can specify `Override => 1` to replace existing composites with the same name.
-
-### Groups Inheritance
-
-Composite tags inherit default groups from their module, with family 0 and 1 always set to 'Composite'.
-
-## Writing Composite Tags
-
-Most composite tags are read-only, deriving from other tags. A few are writable:
-
-- Writing splits the value and updates source tags
-- The WRITE_PROC handles this translation
-- Example: `Flash` tag facilitates EXIF<->XMP conversion
-
-## User-Defined Composites
-
-Users can create custom composite tags via the configuration file:
-
-```perl
-%Image::ExifTool::UserDefined::Composite = (
-    MyCustomTag => {
-        Require => { 0 => 'Make' },
-        ValueConv => '"Camera: $val[0]"',
-    },
-);
-```
-
-## Group Name Conflicts and Precedence
-
-### Tag Resolution Order
-
-When requesting a tag like "GPSLatitude", ExifTool follows this precedence:
-
-1. **Without group prefix**: Returns first matching tag in priority order:
-
-   - Higher numbered duplicates have priority (e.g., "GPSLatitude (1)" over "GPSLatitude")
-   - Most recently extracted tag wins if same priority
-   - Composite tags are built after extraction, so appear last
-
-2. **With group prefix** (e.g., "GPS:GPSLatitude"):
-   - `GroupMatches()` filters tags by group (ExifTool.pm:5125)
-   - Group families checked: 0 (general), 1 (specific), 2 (category)
-   - Returns first match from filtered list
-
-### Composite Tag Groups
-
-Composite tags always belong to:
-
-- **Family 0**: 'Composite'
-- **Family 1**: 'Composite'
-- **Family 2**: Inherited from module (e.g., 'Location' for GPS composites)
-
-The `-G` flag shows family 1 groups, so composite tags appear as "Composite:TagName".
-
-### Priority and Avoid Flags
-
-Some composite tags use special flags:
-
-- `Avoid => 1`: Tag not returned unless specifically requested by group
-- `Priority => 1`: Overrides Avoid's default priority of 0
-- Example: GPS composite tags set both to provide formatted output by default
-
-## GPS Coordinate Conversions
-
-### Raw GPS Format
-
-EXIF GPS coordinates are stored as three rational64u values:
-
-```
-[[degrees, 1], [minutes, 1], [seconds, 100]]
-```
-
-### Composite Conversion Implementation
-
-From GPS.pm:353, the GPS composite tags convert to decimal degrees:
-
-```perl
-GPSLatitude => {
-    Require => {
-        0 => 'GPS:GPSLatitude',      # [[d,1],[m,1],[s,100]]
-        1 => 'GPS:GPSLatitudeRef',   # 'N' or 'S'
-    },
-    ValueConv => '$val[1] =~ /^S/i ? -$val[0] : $val[0]',
-    PrintConv => 'Image::ExifTool::GPS::ToDMS($self, $val, 1, "N")',
-}
-```
-
-The `ToDegrees()` function (GPS.pm:582) performs the conversion:
-
-```perl
-my $deg = $d + (($m || 0) + ($s || 0)/60) / 60;
-```
-
-### Hemisphere Handling
-
-- Latitude: 'S' (South) makes value negative
-- Longitude: 'W' (West) makes value negative
-- PrintConv formats back to DMS with appropriate suffix
-
-### Other GPS Composites
-
-- **GPSDateTime**: Combines GPSDateStamp + GPSTimeStamp
-- **GPSAltitude**: Merges altitude value with Above/Below sea level ref
-- **GPSPosition**: Not standard, but could combine lat/lon
-- **GPSDestLatitude/Longitude**: For destination coordinates
-
-## Composite Tag Group Hierarchy
-
-### Module Registration
-
-When a module adds composites via `AddCompositeTags()`:
-
-1. **Default groups assigned**:
-
-   ```perl
-   GROUPS => { 0 => 'Composite', 1 => 'Composite', 2 => 'Other' }
-   ```
-
-2. **Module groups inherited**:
-
-   ```perl
-   %Image::ExifTool::GPS::Composite = (
-       GROUPS => { 2 => 'Location' },  # Overrides default group 2
-   ```
-
-3. **Tag-specific groups**:
-
-   ```perl
-   GPSDateTime => {
-       Groups => { 2 => 'Time' },  # Override for this tag only
-   ```
-
-### Group Hierarchy
-
-Groups are resolved in this order:
-
-1. Tag-specific Groups hash
-2. Module Composite table GROUPS
-3. Main Composite table defaults
-
-### Dynamic Group Assignment
-
-The `GetGroup()` function (ExifTool.pm:3738) handles group resolution:
-
-- Groups 0-2 are guaranteed to be defined after processing
-- Dynamic groups (G0, G1, etc.) can override at extraction time
-- Composite tags cannot "masquerade" as other groups - they're always in family 0/1 'Composite'
-
-### Accessing Composite Tags by Group
-
-Examples:
-
-- `Composite:GPSLatitude` - Explicitly request composite version
-- `GPS:GPSLatitude` - Gets raw GPS IFD value (3 rationals)
-- `GPSLatitude` - Gets composite (decimal) due to Priority flag
-
-## Performance Considerations
-
-- Tags are built on-demand when accessed
-- Dependency checking adds overhead for complex hierarchies
-- Caching optimizes repeated access in SubDoc scenarios
-- Circular dependency detection prevents infinite loops
-
-## See Also
-
-- `lib/Image/ExifTool/README` - Tag table structure documentation
-- `html/TagNames/Composite.html` - Complete list of standard composite tags
-- `config.html` - User-defined composite tag examples
+ExifTool's composite system uses a distributed architecture with module-specific tables merged into a central registry via `AddCompositeTags()`. The field extractor correctly identifies these as `composite_hash` symbols, and the codegen system successfully processes them once the data access pattern is corrected to match the actual field extractor output format.
