@@ -34,7 +34,7 @@ use Image::ExifTool qw(:DataAccess :Utils);
 use Image::ExifTool::Exif;
 use Image::ExifTool::Minolta;
 
-$VERSION = '3.76';
+$VERSION = '3.78';
 
 sub ProcessSRF($$$);
 sub ProcessSR2($$$);
@@ -319,9 +319,14 @@ sub PrintInvLensSpec($;$$);
     50549 => 'Sigma 50mm F1.2 DG DN | A', #JR (024)
     50550 => 'Sigma 28-105mm F2.8 DG DN | A', #JR (024)
     50551 => 'Sigma 28-45mm F1.8 DG DN | A', #JR (024)
+    50552 => 'Sigma 35mm F1.2 DG II | A', #github352/JR (025)
     50553 => 'Sigma 300-600mm F4 DG OS | S', #JR (025)
     50554 => 'Sigma 16-300mm F3.5-6.7 DC OS | C', #JR (025)
-    50556 => 'Sigma 17-40mm F1.8 DC | C', #JR (025)
+    50555 => 'Sigma 12mm F1.4 DC | C', #JR (025)
+    50556 => 'Sigma 17-40mm F1.8 DC | A', #JR/github352 (025)
+    50557 => 'Sigma 200mm F2 DG OS | S', #github352/JR (025)
+    50558 => 'Sigma 20-200mm F3.5-6.3 DG | C', #github352/JR (025)
+    50559 => 'Sigma 135mm F1.4 DG | A', #github352/JR (025)
 
     # lenses listed in the Sigma MC-11 list, but not yet seen:
     # 504xx => 'Sigma 18-200mm F3.5-6.3 DC MACRO OS HSM | C + MC-11', # (014)
@@ -367,6 +372,7 @@ sub PrintInvLensSpec($;$$);
     61569 => 'LAOWA FFII 10mm F2.8 C&D Dreamer', #JR
 
     61761 => 'Viltrox 28mm F4.5 FE', #JR
+    61767 => 'Viltrox 50mm F2.0 FE', #JR
 );
 
 # ExposureProgram values (ref PH, mainly decoded from A200)
@@ -1129,7 +1135,7 @@ my %hidUnk = ( Hidden => 1, Unknown => 1 );
         SubDirectory => { TagTable => 'Image::ExifTool::Sony::Tag2010h' },
     },{
         Name => 'Tag2010i', # ?
-        Condition => '$$self{Model} =~ /^(ILCE-(6100|6400|6600|7C|7M3|7RM3A?|7RM4A?|9|9M2)|DSC-(RX10M4|RX100M6|RX100M5A|RX100M7|HX95|HX99|RX0M2)|ZV-(1F?|1M2|E10))\b/',
+        Condition => '$$self{Model} =~ /^(ILCE-(6100A?|6400A?|6600|7C|7M3|7RM3A?|7RM4A?|9|9M2)|DSC-(RX10M4|RX100M6|RX100M5A|RX100M7|HX95|HX99|RX0M2)|ZV-(1F?|1M2|E10))\b/',
         SubDirectory => { TagTable => 'Image::ExifTool::Sony::Tag2010i' },
     },{
         Name => 'Tag_0x2010',
@@ -1702,6 +1708,15 @@ my %hidUnk = ( Hidden => 1, Unknown => 1 );
         Count => 4,
         NOTES => 'same as FocusLocation within one pixel',
     },
+    0x205c => { #JR (DSC-RX1RM3)
+        Name => 'StepCropShooting',
+        Writable => 'int8u',
+        PrintConv => {
+            0 => '35mm (Off)',
+            1 => '50mm',
+            2 => '70mm',
+        },
+    },
     0x3000 => {
         Name => 'ShotInfo',
         SubDirectory => { TagTable => 'Image::ExifTool::Sony::ShotInfo' },
@@ -1737,7 +1752,7 @@ my %hidUnk = ( Hidden => 1, Unknown => 1 );
         },
     },{
         Name => 'Tag9050b',
-        Condition => '$$self{Model} =~ /^(ILCE-(6100|6300|6400|6500|6600|7C|7M3|7RM2|7RM3A?|7RM4A?|7SM2|9|9M2)|ILCA-99M2|ZV-E10)\b/',
+        Condition => '$$self{Model} =~ /^(ILCE-(6100A?|6300|6400A?|6500|6600|7C|7M3|7RM2|7RM3A?|7RM4A?|7SM2|9|9M2)|ILCA-99M2|ZV-E10)\b/',
         SubDirectory => {
             TagTable => 'Image::ExifTool::Sony::Tag9050b',
             ByteOrder => 'LittleEndian',
@@ -2074,7 +2089,7 @@ my %hidUnk = ( Hidden => 1, Unknown => 1 );
             '3 3 3 0' => 'ARW 2.3.3', #JR (ILCE-9)
             '3 3 5 0' => 'ARW 2.3.5', #JR (DSC-HX99)
             '4 0 0 0' => 'ARW 4.0', # (ILCE-7SM3)
-            '4 0 1 0' => 'ARW 4.0.1', #github#195 (ZV-E1)
+            '4 0 1 0' => 'ARW 4.0.1', #github195 (ZV-E1)
             '5 0 0 0' => 'ARW 5.0', # (ILCE-9M3)
             '5 0 1 0' => 'ARW 5.0.1', # (ILCE-1 with FirmWare 2.0)
             # what about cRAW images?
@@ -8007,7 +8022,7 @@ my %isoSetting2010 = (
 #
     0x019f => {
         Name => 'ShutterCount3',
-        Condition => '$$self{Model} =~ /^(ILCE-(6100|6400|6600|7C|7M3|7RM3A?|7RM4A?|9|9M2)|ZV-E10)\b/',
+        Condition => '$$self{Model} =~ /^(ILCE-(6100A?|6400A?|6600|7C|7M3|7RM3A?|7RM4A?|9|9M2)|ZV-E10)\b/',
         Format => 'int32u',
         RawConv => '$val == 0 ? undef : $val',
     },
@@ -8054,7 +8069,7 @@ my %isoSetting2010 = (
     },
     0x01f0 => {
         Name => 'LensSpecFeatures',
-        Condition => '$$self{Model} =~ /^(ILCE-(6100|6400|6600|7M3|7RM3A?|9))\b/ and $$self{Software} !~ /^ILCE-9 (v5.0|v6.0)/',
+        Condition => '$$self{Model} =~ /^(ILCE-(6100A?|6400A?|6600|7M3|7RM3A?|9))\b/ and $$self{Software} !~ /^ILCE-9 (v5.0|v6.0)/',
         Priority => 0,
         Format => 'undef[2]',
         ValueConv => 'join " ", unpack "H2H2", $val',
