@@ -198,7 +198,7 @@ ExifTool has special fast-scan handling for HEIC files to avoid processing large
 
 ## References
 
-**Primary Source**: `/home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/QuickTime.pm`
+**Primary Source**: `$REPO_ROOT/third-party/exiftool/lib/Image/ExifTool/QuickTime.pm`
 - Lines 119-126: MIME type mapping
 - Lines 227-231: File type descriptions
 - Lines 2770-3021: HEIF-specific atom definitions

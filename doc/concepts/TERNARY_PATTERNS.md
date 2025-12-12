@@ -137,11 +137,11 @@ Perl's truthiness differs from most languages:
 ## Key Files with Ternary Patterns
 
 **High-density files:**
-- `/home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/Canon.pm` - Lines 1170, 2385, 7518
-- `/home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/Minolta.pm` - Lines 1114, 1908-1911, 2700
-- `/home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/Olympus.pm` - Lines 912-913, 3333-3334
-- `/home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/Exif.pm` - Lines 1729, 4664
-- `/home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/PanasonicRaw.pm` - Line 281
+- `$REPO_ROOT/third-party/exiftool/lib/Image/ExifTool/Canon.pm` - Lines 1170, 2385, 7518
+- `$REPO_ROOT/third-party/exiftool/lib/Image/ExifTool/Minolta.pm` - Lines 1114, 1908-1911, 2700
+- `$REPO_ROOT/third-party/exiftool/lib/Image/ExifTool/Olympus.pm` - Lines 912-913, 3333-3334
+- `$REPO_ROOT/third-party/exiftool/lib/Image/ExifTool/Exif.pm` - Lines 1729, 4664
+- `$REPO_ROOT/third-party/exiftool/lib/Image/ExifTool/PanasonicRaw.pm` - Line 281
 
 ## Special Considerations
 

@@ -106,12 +106,12 @@ The key fix was correcting the data access pattern from `symbol.data.get("data")
 
 ## Files Referenced
 
-- `/home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool.pm` (lines 5662-5720, 6800-7500)
-- `/home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/GPS.pm` (lines 353-490) 
-- `/home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/Exif.pm` (lines 4639-4720)
-- `/home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/Canon.pm` (lines 7800-8200)
-- `/home/mrm/src/exif-oxide/codegen/src/strategies/composite_tag.rs` (lines 98-106)
-- `/home/mrm/src/exif-oxide/codegen/scripts/field_extractor.pl` (lines 75-85)
+- `$REPO_ROOT/third-party/exiftool/lib/Image/ExifTool.pm` (lines 5662-5720, 6800-7500)
+- `$REPO_ROOT/third-party/exiftool/lib/Image/ExifTool/GPS.pm` (lines 353-490) 
+- `$REPO_ROOT/third-party/exiftool/lib/Image/ExifTool/Exif.pm` (lines 4639-4720)
+- `$REPO_ROOT/third-party/exiftool/lib/Image/ExifTool/Canon.pm` (lines 7800-8200)
+- `$REPO_ROOT/codegen/src/strategies/composite_tag.rs` (lines 98-106)
+- `$REPO_ROOT/codegen/scripts/field_extractor.pl` (lines 75-85)
 
 ## Summary
 

@@ -41,31 +41,31 @@ sprintf("%.3f x %.3f mm", split(" ", ""))
 
 ### 1. Basic Dimension Formatting
 ```perl
-# /home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/Pentax.pm:2049
+# $REPO_ROOT/third-party/exiftool/lib/Image/ExifTool/Pentax.pm:2049
 PrintConv => 'sprintf("%.3f x %.3f mm", split(" ",$val))',
 ```
 
 ### 2. Complex Multi-Value Formatting
 ```perl
-# /home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/Sony.pm:642
+# $REPO_ROOT/third-party/exiftool/lib/Image/ExifTool/Sony.pm:642
 PrintConv => 'sprintf("%19d %4d %6d" . " %3d %4d %6d" x 8, split(" ",$val))',
 ```
 
 ### 3. Version Number Formatting
 ```perl
-# /home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool.pm:2163
+# $REPO_ROOT/third-party/exiftool/lib/Image/ExifTool.pm:2163
 PrintConv => 'sprintf("%d.%.2d", split(" ",$val))',
 ```
 
 ### 4. Color Channel Formatting
 ```perl
-# /home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/Canon.pm:1152
+# $REPO_ROOT/third-party/exiftool/lib/Image/ExifTool/Canon.pm:1152
 PrintConv => 'sprintf("%4d %4d %4d (%dK)", split(" ",$val))',
 ```
 
 ### 5. Date/Time Formatting
 ```perl
-# /home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/ICC_Profile.pm:683
+# $REPO_ROOT/third-party/exiftool/lib/Image/ExifTool/ICC_Profile.pm:683
 ValueConv => 'sprintf("%.4d:%.2d:%.2d %.2d:%.2d:%.2d",split(" ",$val));',
 ```
 
@@ -74,7 +74,7 @@ ValueConv => 'sprintf("%.4d:%.2d:%.2d %.2d:%.2d:%.2d",split(" ",$val));',
 Combines mathematical transformation with formatting:
 
 ```perl
-# /home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/Olympus.pm:1911
+# $REPO_ROOT/third-party/exiftool/lib/Image/ExifTool/Olympus.pm:1911
 sprintf("(%d%%,%d%%) (%d%%,%d%%)", map {$_ * 100} split(" ",$val));
 ```
 
@@ -85,7 +85,7 @@ The `map` function transforms each value before passing to `sprintf`.
 Used for binary data formatting:
 
 ```perl
-# /home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/PNG.pm:267
+# $REPO_ROOT/third-party/exiftool/lib/Image/ExifTool/PNG.pm:267
 ValueConv => 'sprintf("%.4d:%.2d:%.2d %.2d:%.2d:%.2d", unpack("nC5", $val))',
 ```
 
@@ -96,10 +96,10 @@ ValueConv => 'sprintf("%.4d:%.2d:%.2d %.2d:%.2d:%.2d", unpack("nC5", $val))',
 For transforming and joining multiple values:
 
 ```perl
-# /home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/Exif.pm:4096
+# $REPO_ROOT/third-party/exiftool/lib/Image/ExifTool/Exif.pm:4096
 PrintConv => 'join("-", map { sprintf("%.2f",$_) } split " ", $val)',
 
-# /home/mrm/src/exif-oxide/third-party/exiftool/lib/Image/ExifTool/Pentax.pm:2738
+# $REPO_ROOT/third-party/exiftool/lib/Image/ExifTool/Pentax.pm:2738
 PrintConv => 'join(" ",map({sprintf("%.5f",$_)} split(" ",$val)))',
 ```
 
