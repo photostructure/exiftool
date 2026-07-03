@@ -29,6 +29,7 @@ config_files/gps2utm.config
 config_files/guano.config
 config_files/local_time.config
 config_files/nksc.config
+config_files/novelty.config
 config_files/onone.config
 config_files/photoshop_paths.config
 config_files/picasa_faces.config
@@ -87,6 +88,7 @@ html/TagNames/GIF.html
 html/TagNames/GIMP.html
 html/TagNames/GM.html
 html/TagNames/GPS.html
+html/TagNames/Garmin.html
 html/TagNames/GeoTiff.html
 html/TagNames/GoPro.html
 html/TagNames/Google.html
@@ -105,6 +107,7 @@ html/TagNames/JPEG.html
 html/TagNames/JSON.html
 html/TagNames/JVC.html
 html/TagNames/Jpeg2000.html
+html/TagNames/Kandao.html
 html/TagNames/Kodak.html
 html/TagNames/KyoceraRaw.html
 html/TagNames/LIF.html
@@ -313,14 +316,15 @@ lib/Image/ExifTool/FujiFilm.pm
 lib/Image/ExifTool/GE.pm
 lib/Image/ExifTool/GIF.pm
 lib/Image/ExifTool/GIMP.pm
-lib/Image/ExifTool/Google.pm
 lib/Image/ExifTool/GM.pm
 lib/Image/ExifTool/GPS.pm
+lib/Image/ExifTool/Garmin.pm
 lib/Image/ExifTool/GeoTiff.pm
 lib/Image/ExifTool/Geolocation.dat
 lib/Image/ExifTool/Geolocation.pm
 lib/Image/ExifTool/Geotag.pm
 lib/Image/ExifTool/GoPro.pm
+lib/Image/ExifTool/Google.pm
 lib/Image/ExifTool/H264.pm
 lib/Image/ExifTool/HP.pm
 lib/Image/ExifTool/HTML.pm
@@ -339,6 +343,7 @@ lib/Image/ExifTool/JPEGDigest.pm
 lib/Image/ExifTool/JSON.pm
 lib/Image/ExifTool/JVC.pm
 lib/Image/ExifTool/Jpeg2000.pm
+lib/Image/ExifTool/Kandao.pm
 lib/Image/ExifTool/Kodak.pm
 lib/Image/ExifTool/KyoceraRaw.pm
 lib/Image/ExifTool/LIF.pm
@@ -627,6 +632,8 @@ t/GIMP_2.out
 t/GPS.t
 t/GPS_2.out
 t/GPS_3.out
+t/Garmin.t
+t/Garmin_2.out
 t/GeoTiff.t
 t/GeoTiff_2.out
 t/GeoTiff_3.out
@@ -643,6 +650,7 @@ t/Geotag.t
 t/Geotag_10.out
 t/Geotag_11.out
 t/Geotag_12.out
+t/Geotag_13.out
 t/Geotag_2.out
 t/Geotag_3.out
 t/Geotag_5.out
@@ -1095,6 +1103,7 @@ t/images/GE.jpg
 t/images/GIF.gif
 t/images/GIMP.xcf
 t/images/GPS.jpg
+t/images/Garmin.fit
 t/images/GeoTiff.tif
 t/images/Geotag.gpx
 t/images/Geotag.igc

@@ -1304,8 +1304,9 @@ sub SetNewValuesFromFile($$;@)
                     IgnoreTags ImageHashType KeepUTCTime Lang LargeFileSupport
                     LigoGPSScale ListItem ListSep MDItemTags MissingTagValue NoPDFList
                     NoWarning Password PrintConv QuickTimeUTC RequestTags SaveFormat
-                    SavePath ScanForXMP StructFormat SystemTags TimeZone Unknown UserParam
-                    Validate WindowsLongPath WindowsWideFile XAttrTags XMPAutoConv))
+                    SavePath ScanForXMP StructFormat SystemTags SystemTimeRes TimeZone
+                    Unknown UserParam Validate WindowsLongPath WindowsWideFile XAttrTags
+                    XMPAutoConv))
         {
             $srcExifTool->Options($_ => $$options{$_});
         }
@@ -2831,8 +2832,9 @@ sub GetAllGroups($;$)
     my %allGroups;
     # add family 1 groups not in tables
     no warnings; # (avoid "possible attempt to put comments in qw()")
+    # start with family 1 groups that are missing from the tables
     $family == 1 and map { $allGroups{$_} = 1 } qw(Garmin AudioItemList AudioUserData
-        VideoItemList VideoUserData Track#Keys Track#ItemList Track#UserData);
+        VideoItemList VideoUserData Track#Keys Track#ItemList Track#UserData KFIX);
     use warnings;
     # loop through all tag tables and get all group names
     while (@tableNames) {
@@ -3792,7 +3794,7 @@ sub GetGeolocateTags($$;$)
         'xmp-exif'      => [ qw(GPSLatitude GPSLongitude) ],
         'itemlist'      => [ 'GPSCoordinates' ],
         'userdata'      => [ 'GPSCoordinates' ],
-        # more general groups not in this lookup: XMP and QuickTime 
+        # more general groups not in this lookup: XMP and QuickTime
     );
     my (@tags, $grp);
     # set specific City and GPS tags
@@ -3845,7 +3847,9 @@ sub GetNewValueHash($$;$$$$)
             # QuickTime and All are special cases because all group1 tags may be updated at once
             last if $$nvHash{WriteGroup} =~ /^(QuickTime|All)$/;
             # replace existing entry if WriteGroup is 'All' (avoids confusion of forum10349)
-            last if $$tagInfo{WriteGroup} and $$tagInfo{WriteGroup} eq 'All';
+            #last if $$tagInfo{WriteGroup} and $$tagInfo{WriteGroup} eq 'All'; # (didn't work for forum17770)
+            # forum17770 patch (also handles case where "EXIF" is specified as a write group)
+            last if $writeGroup eq 'All' or $$nvHash{WriteGroup} eq 'EXIF' and $writeGroup =~ /IFD/;
             $nvHash = $$nvHash{Next};
         }
     }
@@ -4583,7 +4587,15 @@ sub VerboseInfo($$$%)
 
     # generate hex number if tagID is numerical
     if (defined $tagID) {
-        $tagID =~ /^\d+$/ and $hexID = sprintf("0x%.4x", $tagID);
+        if ($tagID =~ /^\d+$/) {
+            if ($parms{Table} and $parms{Table}{VARS} and
+                $parms{Table}{ID_FMT} and $parms{Table}{VARS}{ID_FMT} eq 'dec')
+            {
+                $hexID = $tagID;
+            } else {
+                $hexID = sprintf("0x%.4x", $tagID);
+            }
+        }
     } else {
         $tagID = 'Unknown';
     }
@@ -4596,9 +4608,9 @@ sub VerboseInfo($$$%)
     } else {
         my $prefix;
         $prefix = $parms{Table}{TAG_PREFIX} if $parms{Table};
-        if ($prefix or $hexID) {
+        if ($prefix or defined $hexID) {
             $prefix = 'Unknown' unless $prefix;
-            $tag = $prefix . '_' . ($hexID ? $hexID : $tagID);
+            $tag = $prefix . '_' . (defined $hexID ? $hexID : $tagID);
         } else {
             $tag = $tagID;
         }
@@ -4637,7 +4649,7 @@ sub VerboseInfo($$$%)
         $parms{DataPt} or defined $size or $tagID =~ /\//))
     {
         $line = $indent . '- Tag ';
-        if ($hexID) {
+        if (defined $hexID) {
             $line .= $hexID;
         } else {
             $tagID =~ s/([\0-\x1f\x7f-\xff])/sprintf('\\x%.2x',ord $1)/ge;
@@ -4915,6 +4927,18 @@ sub NewGUID()
     return sprintf('%.4d%.2d%.2d%.2d%.2d%.2d%.2X%.4X%.4X%.4X%.4X',
                    $tm[5]+1900, $tm[4]+1, $tm[3], $tm[2], $tm[1], $tm[0], $guidCount,
                    $$ & 0xffff, rand(0x10000), rand(0x10000), rand(0x10000));
+}
+
+#------------------------------------------------------------------------------
+# Generate a version 4 ("random"), variant 1 UUID (RFC 9562, Section 5.4) (github #421)
+# Inputs: <none>
+# Returns: UUID string
+sub NewUUID()
+{
+    my @rnd = map {int(rand(256))} 1 .. 16;
+    $rnd[6] = ($rnd[6] & 0x0f) | 0x40;
+    $rnd[8] = ($rnd[8] & 0x3f) | 0x80;
+    return uc scalar unpack('H32', join '', map {chr} @rnd);
 }
 
 #------------------------------------------------------------------------------
@@ -7398,7 +7422,7 @@ used routines.
 
 =head1 AUTHOR
 
-Copyright 2003-2025, Phil Harvey (philharvey66 at gmail.com)
+Copyright 2003-2026, Phil Harvey (philharvey66 at gmail.com)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

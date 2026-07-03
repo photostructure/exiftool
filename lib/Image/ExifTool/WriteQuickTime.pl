@@ -177,7 +177,7 @@ sub ConvInvISO6709($)
         # requires at least 3 digits after the decimal point
         # (and as of Apr 2021, Google Photos doesn't accept coordinats
         #  with more than 5 digits after the decimal place:
-        #  https://exiftool.org/forum/index.php?topic=11055.msg67171#msg67171 
+        #  https://exiftool.org/forum/index.php?topic=11055.msg67171#msg67171
         #  still a problem Apr 2024: https://exiftool.org/forum/index.php?msg=85761)
         my @fmt = ('%s%02d.%s%s','%s%03d.%s%s','%s%d.%s%s');
         my @limit = (90,180);
@@ -1104,13 +1104,17 @@ sub WriteQuickTime($$$)
         }
         if ($got != $size) {
             # ignore up to 256 bytes of garbage at end of file
-            if ($got <= 256 and $size >= 1024 and $tag ne 'mdat') {
+            my $type;
+            if ($got <= 256 and $size >= 1024 and $tag ne 'mdat' or
+                $got < 3000 and pack('N',$size) =~ /^<b[r>]/ and $type = 'extraneous HTML')
+            {
                 my $bytes = $got + length $hdr;
+                $type or $type = 'garbage';
                 if ($$et{OPTIONS}{IgnoreMinorErrors}) {
-                    $et->Warn("Deleted garbage at end of file ($bytes bytes)");
+                    $et->Warn("Deleted $type at end of file ($bytes bytes)");
                     $buff = $hdr = '';
                 } else {
-                    $et->Error("Possible garbage at end of file ($bytes bytes)", 1);
+                    $et->Error("Possible $type at end of file ($bytes bytes)", 1);
                     return $rtnVal;
                 }
             } else {
@@ -2262,7 +2266,7 @@ QuickTime-based file formats like MOV and MP4.
 
 =head1 AUTHOR
 
-Copyright 2003-2025, Phil Harvey (philharvey66 at gmail.com)
+Copyright 2003-2026, Phil Harvey (philharvey66 at gmail.com)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

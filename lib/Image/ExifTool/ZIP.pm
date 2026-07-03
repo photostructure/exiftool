@@ -381,7 +381,7 @@ sub ProcessRAR($$)
             # skip over all headers except file or service header
             next unless $headType == 2 or $headType == 3;
             $et->VerboseDir('RAR5 file', undef, $headSize) if $headType == 2;
-            
+
             my $headFlag = ReadULEB($rafHdr);
             ReadULEB($rafHdr);                  # skip extraSize
             my $dataSize;
@@ -840,7 +840,7 @@ Electronic Publication (EPUB), and Sketch design files (SKETCH).
 
 =head1 AUTHOR
 
-Copyright 2003-2025, Phil Harvey (philharvey66 at gmail.com)
+Copyright 2003-2026, Phil Harvey (philharvey66 at gmail.com)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

@@ -391,7 +391,7 @@ my %code2charset = (
     smpl => { #16
         Name => 'Sampler',
         SubDirectory => { TagTable => 'Image::ExifTool::RIFF::Sampler' },
-    },        
+    },
     inst => { #16
         Name => 'Instrument',
         SubDirectory => { TagTable => 'Image::ExifTool::RIFF::Instrument' },
@@ -546,11 +546,11 @@ my %code2charset = (
    'id3 ' => {
         Name => 'ID3',
         SubDirectory => { TagTable => 'Image::ExifTool::ID3::Main' },
-    },        
+    },
    'ID3 ' => { # (NC)
         Name => 'ID3-2',
         SubDirectory => { TagTable => 'Image::ExifTool::ID3::Main' },
-    },        
+    },
 #
 # WebP-specific tags
 #
@@ -1654,6 +1654,7 @@ sub CalcDuration($@)
         # FujiFilm REAL 3D AVI's), but the video stream information isn't reliable for
         # some cameras (eg. Olympus FE models), so use the video stream information
         # only if the RIFF header duration is 2 to 3 times longer
+        # (also see https://github.com/exiftool/exiftool/issues/371)
         my $dur1;
         $dur1 = $val[1] / $val[0] if $val[0];
         if ($val[2] and $val[3]) {
@@ -2236,7 +2237,7 @@ including AVI videos, WAV audio files and WEBP images.
 
 =head1 AUTHOR
 
-Copyright 2003-2025, Phil Harvey (philharvey66 at gmail.com)
+Copyright 2003-2026, Phil Harvey (philharvey66 at gmail.com)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

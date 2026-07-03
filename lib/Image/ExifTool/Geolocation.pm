@@ -12,7 +12,7 @@
 # Notes:        Set $Image::ExifTool::Geolocation::geoDir to override the
 #               default directory containing the database file Geolocation.dat
 #               and the GeoLang directory with the alternate language files.
-#               If set, this directory is 
+#               If set, this directory is
 #
 #               AltNames.dat may be loaded from a different directory by
 #               specifying $Image::ExifTool::Geolocation::altDir.  This
@@ -1020,7 +1020,7 @@ the input arguments of the AddEntry method.
 
 =head1 AUTHOR
 
-Copyright 2003-2025, Phil Harvey (philharvey66 at gmail.com)
+Copyright 2003-2026, Phil Harvey (philharvey66 at gmail.com)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.  The associated database files are

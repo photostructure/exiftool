@@ -503,8 +503,7 @@ effect as a value of 0 for options with numerical values.</p>
     <a href="#WindowsWideFile">WindowsWideFile</a> or
     <a href="#WindowsLongPath">WindowsLongPath</a> option causes CharsetFileName to
     default to 'UTF8' in Windows if not defined, and that
-    <a href="#WindowsLongPath">WindowsLongPath</a> is set by default in
-    ExifTool 13.07 and later.</td>
+    <a href="#WindowsLongPath">WindowsLongPath</a> is set by default if Win32::API is available.</td>
     <td align=center><i>(see <a href="#Charset">Charset</a> option)</i><br>or undef</td><td align=center>undef</td></tr>
 <tr id="CharsetID3"><td>CharsetID3</td><td>Internal encoding to assume for ID3v1 strings.  By
     the specification ID3v1 strings should be encoded in ISO 8859-1 (essentially
@@ -761,6 +760,15 @@ effect as a value of 0 for options with numerical values.</p>
     <tr><td valign=top align=right><b>M</b>,&nbsp;<b>m</b>&nbsp;or&nbsp;<b>mph</b></td><td>=&nbsp;mph</td></tr>
     <tr><td valign=top align=right><i>(anything else)</i></td><td>=&nbsp;knots</td></tr>
     </table></td><td align=center>undef</td></tr>
+<tr id="GeoUserTag"><td>GeoUserTag</td><td>Additional user-defined tags to write
+    when geotagging from GPX or CSV files.  Format is '<i>TAG</i>=<i>TOKEN</i>,...'
+    where <i>TAG</i> is an ExifTool tag name (with optional group name), and
+    <i>TOKEN</i> is is the GPX property name or CSV column name.  eg)
+    '<code>Location=desc</code>' will write the Location tag based on value of
+    'desc' in the GPS log file. The tag value is taken from the nearest fix in
+    time.  Multiple tags may be specified using comma separators.</td>
+    <td align=center>String of the form '<i>TAG</i>=<i>TOKEN</i>,...'</td>
+    <td align=center>undef</td></tr>
 <tr id="GlobalTimeShift"><td>GlobalTimeShift</td>
     <td>Time shift to apply to all extracted date/time PrintConv values.  Does
     not affect ValueConv values. When specifying a number of months and/or years
@@ -1068,6 +1076,13 @@ effect as a value of 0 for options with numerical values.</p>
     FileInodeNumber, FileHardLinks, FileUserID, FileGroupID, FileDeviceID,
     FileBlockSize and FileBlockCount.</td>
     <td align=center>0 or 1</td><td align=center>undef</td></tr>
+<tr id="SystemTimeRes"><td>SystemTimeRes</td><td>Number of digits in sub-seconds
+    for system times and some other epoch times.  A value of 0 rounds to the
+    nearest second.  Negative values cause trailing zeros to be removed.  eg) A
+    value of <code>-6</code> returns system times to 6 decimal places with
+    trailing zeros removed. Note that round-off errors may appear starting at
+    the 6th decimal place for some time formats.</td>
+    <td align=center>Any integer</td><td align=center>0</td></tr>
 <tr id="TextOut"><td>TextOut</td><td>Output file for Verbose and HtmlDump options.</td>
     <td align=center>File reference</td><td align=center>\*STDOUT</td></tr>
 <tr id="TimeZone"><td>TimeZone</td><td>Set the time zone for local date/time values. The
@@ -1123,7 +1138,7 @@ effect as a value of 0 for options with numerical values.</p>
     </table></td><td align=center>0</td></tr>
 <tr id="WindowsLongPath"><td>WindowsLongPath</td><td>Support long path names in Windows.
     Enabling this option automatically enables the WindowsWideFile feature.</td>
-    <td align=center>0 or 1</td><td align=center>1</td></tr>
+    <td align=center>0 or 1</td><td align=center>1 if Win32::API is available, 0 otherwise</td></tr>
 <tr id="WindowsWideFile"><td>WindowsWideFile</td><td>Force the use of wide-character
     Windows I/O functions.  This may be necessary when files are on a network drive and the
     current directory name contains Unicode characters.  Without this option the wide-character
@@ -1412,14 +1427,10 @@ the returned PrintConv value for these tags is either a string of values or
 a list reference (depending on the ListJoin option setting), and the ValueConv
 value is always a list reference.  But in list context,
 <a href="#GetValue">GetValue</a> always returns the list itself.</p>
-<p>Note that <a href="#GetInfo">GetValue</a> requires a case-sensitive tag key
-as an argument. To retrieve tag information based on a case-insensitive tag name
-(with an optional group specifier), use <a href="#GetInfo">GetInfo</a>
-instead.</p>
 <blockquote><table class='norm'>
 <tr><td><b>Prototype</b></td><td>GetValue($$;$)</td></tr>
 <tr><td valign=top><b>Inputs</b></td><td><b>0)</b> ExifTool object reference
-    <br><b>1)</b> Tag key, or case-sensitive tag name with optional group prefix(es)
+    <br><b>1)</b> Tag key, or case-insensitive tag name with optional group prefix(es)
     <br><b>2)</b> [<i>optional</i>] Value type, 'PrintConv', 'ValueConv', 'Both',
     'Raw', 'Bin' or 'Rational'
     <br>&nbsp;<br>The default value type is 'PrintConv' if the PrintConv option is set,
@@ -2325,47 +2336,68 @@ the specific IFD).
 <td>AAC, AFCP, AIFF, APE, APP0, APP1, APP10, APP11, APP12, APP13, APP14, APP15,
 APP2, APP3, APP4, APP5, APP6, APP7, APP8, APP9, ASF, Audible, Canon,
 CanonVRD, Composite, DICOM, DjVu, DNG, Ducky, DV, EXE, EXIF, ExifTool, File,
-FITS, FLAC, Flash, FlashPix, FLIR, Font, FotoStation, GeoTiff, GIF, GIMP,
-GM, GoPro, H264, HTML, ICC_Profile, ID3, IPTC, ISO, ITC, JFIF, JPEG,
-Jpeg2000, JSON, JUMBF, Leaf, LNK, Lytro, M2TS, MakerNotes, Matroska, Meta,
-MIE, MIFF, MISB, MNG, MOI, MPC, MPEG, MPF, MXF, Ogg, OpenEXR, Opus, Palm,
-PanasonicRaw, Parrot, PDF, PhotoCD, PhotoMechanic, Photoshop, PICT, PLIST,
-PNG, PostScript, PrintIM, Protobuf, PSP, QuickTime, Radiance, RAF, Rawzor,
-Real, Red, RIFF, RSRC, RTF, SigmaRaw, Sony, Stim, SVG, Theora, Torrent,
-Trailer, VCard, Vorbis, WTV, XML, XMP, ZIP
+FITS, FLAC, Flash, FlashPix, FLIR, Font, FotoStation, Garmin, GeoTiff, GIF,
+GIMP, GM, GoPro, H264, HTML, ICC_Profile, ID3, IPTC, ISO, ITC, JFIF, JPEG,
+Jpeg2000, JSON, JUMBF, Kandao, Leaf, LNK, Lytro, M2TS, MakerNotes, Matroska,
+Meta, MIE, MIFF, MISB, MNG, MOI, MPC, MPEG, MPF, MXF, Ogg, OpenEXR, Opus, Palm,
+PanasonicRaw, Parrot, PDF, PhotoCD, PhotoMechanic, Photoshop, PICT, PLIST, PNG,
+PostScript, PrintIM, Protobuf, PSP, QuickTime, Radiance, RAF, Rawzor, Real, Red,
+RIFF, RSRC, RTF, SigmaRaw, Sony, Stim, SVG, Theora, Torrent, Trailer, VCard,
+Vorbis, WTV, XML, XMP, ZIP
 </td></tr>
 <tr><td><b>1&nbsp;(Specific&nbsp;Location)</b></td>
-<td>AAC, AC3, Adobe, AdobeCM, AdobeDNG, AFCP, AIFF, APE, APP10, APP2, Apple,
-ASF, Audible, AudioItemList, AudioKeys, AudioUserData, AVI1, CameraIFD,
-Canon, CanonCustom, CanonDR4, CanonRaw, CanonVRD, Casio, CBOR, Chapter#,
-CIFF, Composite, DICOM, DJI, DjVu, DjVu-Meta, DNG, Ducky, DV, EPPIM, EXE,
-EXIF, ExifIFD, ExifTool, File, FITS, FLAC, Flash, FlashPix, FLIR, Font,
-FotoStation, FujiFilm, FujiIFD, Garmin, GE, GeoTiff, GIF, GIMP,
-GlobParamIFD, GM, Google, GoPro, GPS, GraphConv, GSpherical, H264, HP, HTC,
-HTML, HTML-dc, HTML-ncc, HTML-office, HTML-prod, HTML-vw96, HTTP-equiv,
-ICC-chrm, ICC-cicp, ICC-clrt, ICC-header, ICC-meas, ICC-meta, ICC-view,
-ICC_Profile, ICC_Profile#, ID3, ID3v1, ID3v1_Enh, ID3v2_2, ID3v2_3, ID3v2_4,
-IFD0, IFD1, InfiRay, Insta360, InteropIFD, IPTC, IPTC#, ISO, ITC, ItemList,
-iTunes, JFIF, JFXX, JPEG, JPEG-HDR, Jpeg2000, JPS, JSON, JUMBF, JVC,
-KDC_IFD, Keys, Kodak, KodakBordersIFD, KodakEffectsIFD, KodakIFD,
-KyoceraRaw, Leaf, LeafSubIFD, Leica, LNK, Lyrics3, Lytro, M-RAW, M2TS, MAC,
-MacOS, MakerNotes, MakerUnknown, Matroska, MediaJukebox, Meta, MetaIFD,
-Microsoft, MIE-Audio, MIE-Camera, MIE-Canon, MIE-Doc, MIE-Extender,
-MIE-Flash, MIE-Geo, MIE-GPS, MIE-Image, MIE-Lens, MIE-Main, MIE-MakerNotes,
-MIE-Meta, MIE-Orient, MIE-Preview, MIE-Thumbnail, MIE-Unknown, MIE-UTM,
-MIE-Video, MIFF, Minolta, MinoltaRaw, MISB, MNG, MOBI, MOI, Motorola, MPC,
-MPEG, MPF0, MPImage, MS-DOC, MXF, Nextbase, Nikon, NikonCapture,
-NikonCustom, NikonScan, NikonSettings, NineEdits, Nintendo, NITF, Ocad, Ogg,
-Olympus, OnePlus, OpenEXR, Opus, Palm, Panasonic, PanasonicRaw, Parrot, PDF,
-Pentax, PhaseOne, PhotoCD, PhotoMechanic, Photoshop, PICT, PictureInfo, PNG,
-PNG-cICP, PNG-pHYs, PostScript, PreviewIFD, PrintIM, ProfileIFD, PSP,
-Qualcomm, QuickTime, Radiance, RAF, RAF2, Rawzor, Real, Real-CONT,
-Real-MDPR, Real-PROP, Real-RA3, Real-RA4, Real-RA5, Real-RJMD, Reconyx, Red,
-Ricoh, RIFF, RMETA, RSRC, RTF, Samsung, Sanyo, Scalado, SEAL, Sigma,
-SigmaRaw, Sony, SonyIDC, SPIFF, SR2, SR2DataIFD, SR2SubIFD, SRF#, Stim,
-SubIFD, SVG, System, Theora, Torrent, Track#, Track#ItemList, Track#Keys,
-Track#UserData, UserData, VCalendar, VCard, Version0, VideoItemList,
-VideoKeys, VideoUserData, Vivo, VNote, Vorbis, WTV, XML, XMP, XMP-aas,
+<td>AAC, AADAccelFeatures, AC3, AccelData, Activity, Adobe, AdobeCM, AdobeDNG,
+AFCP, AIFF, AntChannelID, AntRx, AntTx, APE, APP2, Apple, AROT, ASF,
+Audible, AudioItemList, AudioKeys, AudioUserData, AuxBattery, AVI1,
+AviationAttitude, Barometer, BeatIntervals, BikeProfile, BloodPress,
+CadenceZone, CameraEvent, CameraIFD, Canon, CanonCustom, CanonDR4, CanonRaw,
+CanonVRD, Capabilities, Casio, CBOR, Chapter#, ChronoShotData,
+ChronoShotSession, CIFF, ClimbPro, Composite, Connectivity, Course,
+CoursePoint, DevDataID, DeviceInfo, DeviceSettings, DICOM, DiveAlarm,
+DiveApneaAlarm, DiveGas, DiveSettings, DiveSummary, DJI, DjVu, DjVu-Meta,
+DNG, Ducky, DV, EPPIM, Event, ExdDataConceptConfig, ExdDataFieldConfig,
+ExdScreenConfig, EXE, ExerciseTitle, EXIF, ExifIFD, ExifTool, FieldCaps,
+FieldDescr, File, FileCaps, FileCreator, FileID, FITS, FLAC, Flash,
+FlashPix, FLIR, Font, FotoStation, FujiFilm, FujiIFD, Garmin, GE, GeoTiff,
+GIF, GIMP, GlobParamIFD, GM, Goal, Google, GoPro, GPS, GraphConv,
+GSpherical, GyroData, H264, HP, HR, HRMProfile, HRV, HRVStatusSummary,
+HRVValue, HRZone, HSA_HRData, HSA_SPO2Data, HSAAccelData, HSABodyBattery,
+HSAConfigData, HSAEvent, HSAGyroData, HSARespirData, HSAStepData,
+HSAStressData, HSAWristTemp, HTC, HTML, HTML-dc, HTML-ncc, HTML-office,
+HTML-prod, HTML-vw96, HTTP-equiv, ICC-chrm, ICC-cicp, ICC-clrt, ICC-header,
+ICC-meas, ICC-meta, ICC-view, ICC_Profile, ICC_Profile#, ID3, ID3v1,
+ID3v1_Enh, ID3v2_2, ID3v2_3, ID3v2_4, IFD0, IFD1, InfiRay, Insta360,
+InteropIFD, IPTC, IPTC#, ISO, ITC, ItemList, iTunes, JFIF, JFXX, JPEG,
+JPEG-HDR, Jpeg2000, JPS, JSON, JUMBF, Jump, JVC, KDC_IFD, Keys, KFIX, Kodak,
+KodakBordersIFD, KodakEffectsIFD, KodakIFD, KVAR, KyoceraRaw, Lap, Leaf,
+LeafSubIFD, Leica, Length, LNK, Lyrics3, Lytro, M-RAW, M2TS, MAC, MacOS,
+MagData, MakerNotes, MakerUnknown, Matroska, MaxMetData, MediaJukebox,
+MemoGlob, MesgCaps, Meta, MetaIFD, MetZone, Microsoft, MIE-Audio,
+MIE-Camera, MIE-Canon, MIE-Doc, MIE-Extender, MIE-Flash, MIE-Geo, MIE-GPS,
+MIE-Image, MIE-Lens, MIE-Main, MIE-MakerNotes, MIE-Meta, MIE-Orient,
+MIE-Preview, MIE-Thumbnail, MIE-Unknown, MIE-UTM, MIE-Video, MIFF, Minolta,
+MinoltaRaw, MISB, MNG, MOBI, MOI, MonitorHRData, MonitorInfo, Monitoring,
+Motorola, MPC, MPEG, MPF0, MPImage, MS-DOC, MXF, NapEvent, Nextbase, Nikon,
+NikonCapture, NikonCustom, NikonScan, NikonSettings, NineEdits, Nintendo,
+NITF, NMEA, OBDIIData, Ocad, Ogg, OHRSettings, Olympus, OneDSensorCal,
+OnePlus, OpenEXR, Opus, Palm, Panasonic, PanasonicRaw, Parrot, PDF, Pentax,
+PhaseOne, PhotoCD, PhotoMechanic, Photoshop, PICT, PictureInfo, PNG,
+PNG-cICP, PNG-pHYs, PostScript, PowerZone, PreviewIFD, PrintIM, ProfileIFD,
+PSP, Qualcomm, QuickTime, Radiance, RAF, RAF2, RawBBI, Rawzor, Real,
+Real-CONT, Real-MDPR, Real-PROP, Real-RA3, Real-RA4, Real-RA5, Real-RJMD,
+Reconyx, Record, Red, RespirationRate, Ricoh, RIFF, RMETA, RSRC, RTF,
+Samsung, Sanyo, Scalado, Schedule, SDMProfile, SEAL, SegFile, SegLap,
+SegLeaderboard, SegmentID, SegPoint, Session, Set, Sigma, SigmaRaw,
+SkinTempOvernight, SlaveDevice, SleepAssessment, SleepDisruptOvernight,
+SleepDisruptPeriod, SleepLevel, Software, Sony, SonyIDC, SpeedZone, SPIFF,
+Split, SplitSummary, SPO2Data, Sport, SR2, SR2DataIFD, SR2SubIFD, SRF#,
+Stim, StressLevel, SubIFD, SVG, System, TankSummary, TankUpdate, Theora,
+ThreeDSensorCal, TimeInZone, Torrent, Totals, Track#, Track#ItemList,
+Track#Keys, Track#UserData, TrainingFile, TrainingSettings, TSCorrelation,
+UserData, UserProfile, VCalendar, VCard, Version0, Video, VideoClip,
+VideoDescr, VideoFrame, VideoItemList, VideoKeys, VideoTitle, VideoUserData,
+Vivo, VNote, Vorbis, WatchfaceSettings, WeatherAlert, WeatherConditions,
+WeightScale, Workout, WorkoutSess, WorkoutStep, WTV, XML, XMP, XMP-aas,
 XMP-acdsee, XMP-acdsee-rs, XMP-album, XMP-apdi, XMP-apple-fi, XMP-ast,
 XMP-aux, XMP-cc, XMP-cell, XMP-crd, XMP-creatorAtom, XMP-crs, XMP-dc,
 XMP-Device, XMP-dex, XMP-DICOM, XMP-digiKam, XMP-drone-dji, XMP-dwc, XMP-et,
@@ -2378,7 +2410,7 @@ XMP-mwg-kw, XMP-mwg-rs, XMP-nine, XMP-panorama, XMP-pdf, XMP-pdfx,
 XMP-photomech, XMP-photoshop, XMP-PixelLive, XMP-plus, XMP-pmi, XMP-prism,
 XMP-prl, XMP-prm, XMP-pur, XMP-rdf, XMP-sdc, XMP-seal, XMP-swf, XMP-tiff,
 XMP-x, XMP-xmp, XMP-xmpBJ, XMP-xmpDM, XMP-xmpDSA, XMP-xmpMM, XMP-xmpNote,
-XMP-xmpPLUS, XMP-xmpRights, XMP-xmpTPg, ZIP
+XMP-xmpPLUS, XMP-xmpRights, XMP-xmpTPg, ZIP, ZonesTarget
 </td></tr>
 <tr><td><b>2&nbsp;(Category)</b></td>
 <td>Audio, Author, Camera, Device, Document, ExifTool, Image, Location, Other,

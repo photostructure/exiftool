@@ -79,8 +79,11 @@
 <a name='UserDefined'># The %Image::ExifTool::UserDefined hash defines new tags to be added
 # to existing tables.</a></span>
 %Image::ExifTool::UserDefined = (
-    <span class=com># All EXIF tags are added to the Main table, and WriteGroup is used to
-    # specify where the tag is written (default is ExifIFD if not specified):</span>
+    <span class=com># All EXIF tags but GPS are added to the Main table, and WriteGroup is
+    # used to specify where the tag is written (defaulting to ExifIFD). Note
+    # that when reading custom EXIF tags, the same config file must be used
+    # to be able to see them with the given names. Without the config file
+    # they may only be seen as unknown tags with the -u option.</span>
     'Image::ExifTool::Exif::Main' =&gt; {
         <span class=com># Example 1.  EXIF:NewEXIFTag</span>
         0xd000 =&gt; {
@@ -141,7 +144,7 @@
     <span class=com># new PNG tags are added to the PNG::TextualData table:</span>
     'Image::ExifTool::PNG::TextualData' =&gt; {
         <span class=com># Example 12.  PNG:NewPngTag1</span>
-        NewPngTag1 =&gt; { },
+        NewPngTag1 =&gt; { }, <span class=com># (Writable is 'string' by default for XMP tags)</span>
         <span class=com># Example 13.  PNG:NewPngTag2</span>
         NewPngTag2 =&gt; { iTXt =&gt; 1 }, <span class=com># (force this tag to be written as iTXt)</span>
         <span class=com># Example 14.  PNG:NewPngTag3</span>

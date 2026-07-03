@@ -1,4 +1,4 @@
-[ExifTool, ExifTool, ExifTool] ExifToolVersion - ExifTool Version Number: 12.88
+[ExifTool, ExifTool, ExifTool] ExifToolVersion - ExifTool Version Number: 13.59
 [File, System, Other] FileSize - File Size: 38 kB
 [File, File, Other] FileType - File Type: RAF
 [File, File, Other] FileTypeExtension - File Type Extension: raf
@@ -11,7 +11,7 @@
 [File, File, Image] ColorComponents - Color Components: 3
 [File, File, Image] YCbCrSubSampling - Y Cb Cr Sub Sampling: YCbCr4:2:0 (2 2)
 [File, File, Preview] PreviewImage - Preview Image: (Binary data 12167 bytes)
-[RAF, RAF, Image] 60 - RAF Version: 0106
+[RAF, RAF, Image] 60 - Firmware Version: 0106
 [RAF, RAF, Image] 108 - RAF Compression: Uncompressed
 [RAF, RAF, Image] 256 - Raw Image Full Size: 4352x1444
 [RAF, RAF, Image] 272 - Raw Image Crop Top Left: 10 48
@@ -27,6 +27,7 @@
 [RAF, RAF, Image] 8976 - WB GRGB Levels Warm White Fluor: 384 509 384 878
 [RAF, RAF, Image] 8977 - WB GRGB Levels Living Room Warm White Fluor: 384 419 384 920
 [RAF, RAF, Image] 9216 - WB GRGB Levels Tungsten: 384 384 384 832
+[RAF, RAF, Image] 9232 - WB GRGB Levels Flash: 384 687 384 454
 [RAF, RAF, Image] 12272 - WB GRGB Levels: 384 601 384 515
 [RAF, RAF, Image] 37376 - Relative Exposure: 0
 [RAF, RAF, Image] 38480 - Raw Exposure Bias: 0
@@ -44,6 +45,7 @@
 [RAF, RAF2, Image] 8976 - WB GRGB Levels Warm White Fluor: 384 580 384 1028
 [RAF, RAF2, Image] 8977 - WB GRGB Levels Living Room Warm White Fluor: 384 477 384 1078
 [RAF, RAF2, Image] 9216 - WB GRGB Levels Tungsten: 384 438 384 975
+[RAF, RAF2, Image] 9232 - WB GRGB Levels Flash: 384 783 384 532
 [RAF, RAF2, Image] 12272 - WB GRGB Levels: 384 685 384 603
 [RAF, RAF2, Image] 37376 - Relative Exposure: -4.0
 [RAF, RAF2, Image] 38480 - Raw Exposure Bias: 0
@@ -144,5 +146,5 @@
 [Composite, Composite, Camera] Exif-ScaleFactor35efl - Scale Factor To 35 mm Equivalent: 1.5
 [Composite, Composite, Camera] Exif-CircleOfConfusion - Circle Of Confusion: 0.020 mm
 [Composite, Composite, Image] Exif-FOV - Field Of View: 19.5 deg
-[Composite, Composite, Camera] Exif-FocalLength35efl - Focal Length: 70.0 mm (35 mm equivalent: 105.0 mm)
+[Composite, Composite, Camera] Exif-FocalLength35efl - Focal Length 35mm Equiv: 70.0 mm (35 mm equivalent: 105.0 mm)
 [Composite, Composite, Camera] Exif-HyperfocalDistance - Hyperfocal Distance: 30.58 m

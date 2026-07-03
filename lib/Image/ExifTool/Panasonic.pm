@@ -37,7 +37,7 @@ use vars qw($VERSION %leicaLensTypes);
 use Image::ExifTool qw(:DataAccess :Utils);
 use Image::ExifTool::Exif;
 
-$VERSION = '2.27';
+$VERSION = '2.29';
 
 sub ProcessLeicaLEIC($$$);
 sub WhiteBalanceConv($;$$);
@@ -361,6 +361,7 @@ my %shootingMode = (
                 '16 0'  => '1-area', # (FZ8)
                 '16 16' => '1-area (high speed)', # (FZ8)
                 '16 32' => '1-area +', #forum16903 (G9M2)
+                '16 225'=> '225-area 2', #forum16903 (S5D)
                 '17 0'  => 'Full Area', #forum16903 (G9M2)
                 # '32 0' is Face Detect for FS7, and Face Detect or Focus Tracking
                 # for the DMC-FZ200 (ref 17), and Auto is DMC-L1 guess,
@@ -1440,6 +1441,11 @@ my %shootingMode = (
             3 => 'High',
         },
     },
+    0xd4 => { #forum17795
+        Name => 'HybridLogGamma',
+        Writable => 'int16u',
+        PrintConv => { 0 => 'Off', 1 => 'On' },
+    },
     0xd6 => { #PH (DC-S1)
         Name => 'NoiseReductionStrength',
         Writable => 'rational64s',
@@ -1492,6 +1498,22 @@ my %shootingMode = (
         Name => 'DynamicRangeBoost',
         Writable => 'int16u',
         PrintConv => { 0 => 'Off', 1 => 'On' },
+    },
+    0xf1 => { #github365
+        Name => 'LUT1Name',
+        Writable => 'string',
+    },
+    0xf3 => { #github365
+        Name => 'LUT1Opacity',
+        Writable => 'int8u',    # (percent)
+    },
+    0xf4 => { #github365
+        Name => 'LUT2Name',
+        Writable => 'string',
+    },
+    0xf5 => { #github365
+        Name => 'LUT2Opacity',
+        Writable => 'int8u',    # (percent)
     },
     0x0e00 => {
         Name => 'PrintIM',
@@ -2279,7 +2301,7 @@ my %shootingMode = (
         Format => 'int16u[4]',
         RawConv => '$$self{NumFacePositions} < 1 ? undef : $val',
         Notes => q{
-            4 numbers: X/Y coordinates of the face center and width/height of face. 
+            4 numbers: X/Y coordinates of the face center and width/height of face.
             Coordinates are relative to an image twice the size of the thumbnail, or 320
             pixels wide
         },
@@ -2942,7 +2964,7 @@ Panasonic and Leica maker notes in EXIF information.
 
 =head1 AUTHOR
 
-Copyright 2003-2025, Phil Harvey (philharvey66 at gmail.com)
+Copyright 2003-2026, Phil Harvey (philharvey66 at gmail.com)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

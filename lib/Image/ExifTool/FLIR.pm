@@ -479,7 +479,7 @@ my %float8g = ( Format => 'float', PrintConv => 'sprintf("%.8g",$val)' );
     VARS => { ID_FMT => 'none' },
     NOTES => q{
         Tags listed below are only for the first measurement tool, however multiple
-        measurements may be added, and information is extracted for all of them. 
+        measurements may be added, and information is extracted for all of them.
         Tags for subsequent measurements are generated as required with the prefixes
         "Meas2", "Meas3", etc.
     },
@@ -1633,7 +1633,7 @@ Systems Inc. thermal image files (FFF, FPF and JPEG format).
 
 =head1 AUTHOR
 
-Copyright 2003-2025, Phil Harvey (philharvey66 at gmail.com)
+Copyright 2003-2026, Phil Harvey (philharvey66 at gmail.com)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
